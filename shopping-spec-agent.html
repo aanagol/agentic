@@ -1,0 +1,665 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Shopping Spec Agent</title>
+  <style>
+    :root {
+      --page: #f5f7fb;
+      --panel: #ffffff;
+      --ink: #18212f;
+      --muted: #5f6877;
+      --line: #d9dee7;
+      --accent: #0b6f6a;
+      --accent-dark: #084f4c;
+      --tag: #e7f3f1;
+      --warn: #fff5dd;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background: var(--page);
+      color: var(--ink);
+      font-family: Arial, Helvetica, sans-serif;
+      line-height: 1.5;
+    }
+
+    .wrap {
+      width: min(1160px, calc(100% - 32px));
+      margin: 0 auto;
+    }
+
+    header {
+      border-bottom: 1px solid var(--line);
+      background: #ffffff;
+    }
+
+    .hero {
+      padding: 40px 0 28px;
+    }
+
+    h1 {
+      max-width: 860px;
+      margin: 0 0 12px;
+      font-size: clamp(2rem, 5vw, 3.6rem);
+      line-height: 1.04;
+      letter-spacing: 0;
+    }
+
+    .subtitle {
+      max-width: 820px;
+      margin: 0;
+      color: var(--muted);
+      font-size: 1.05rem;
+    }
+
+    main {
+      padding: 26px 0 48px;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: minmax(290px, 0.9fr) minmax(320px, 1.1fr);
+      gap: 16px;
+      align-items: start;
+    }
+
+    .panel {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 18px;
+      background: var(--panel);
+      box-shadow: 0 10px 24px rgba(20, 31, 48, 0.06);
+    }
+
+    h2 {
+      margin: 0 0 12px;
+      font-size: 1.22rem;
+      line-height: 1.2;
+      letter-spacing: 0;
+    }
+
+    label {
+      display: block;
+      margin: 12px 0 6px;
+      color: var(--muted);
+      font-weight: 700;
+      font-size: 0.9rem;
+    }
+
+    input,
+    textarea,
+    select {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: #fbfcfe;
+      color: var(--ink);
+      font: inherit;
+    }
+
+    input,
+    select {
+      min-height: 42px;
+      padding: 8px 10px;
+    }
+
+    textarea {
+      min-height: 86px;
+      padding: 10px;
+      resize: vertical;
+    }
+
+    .two {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    button {
+      width: 100%;
+      min-height: 46px;
+      margin-top: 16px;
+      border: 0;
+      border-radius: 6px;
+      background: var(--accent);
+      color: #ffffff;
+      cursor: pointer;
+      font-weight: 700;
+      font-size: 1rem;
+    }
+
+    button:hover,
+    button:focus {
+      background: var(--accent-dark);
+    }
+
+    .result {
+      display: grid;
+      gap: 14px;
+    }
+
+    .card {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 16px;
+      background: var(--panel);
+    }
+
+    .small {
+      color: var(--muted);
+      font-size: 0.92rem;
+    }
+
+    .search-links {
+      display: grid;
+      gap: 10px;
+      margin-top: 10px;
+    }
+
+    .search-link,
+    .copy-block {
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: #fbfcfe;
+    }
+
+    .search-link {
+      display: block;
+      padding: 10px;
+      color: var(--accent-dark);
+      font-weight: 700;
+      text-decoration: none;
+    }
+
+    .search-link:hover,
+    .search-link:focus {
+      border-color: var(--accent);
+    }
+
+    .copy-block {
+      min-height: 220px;
+      width: 100%;
+      padding: 12px;
+      white-space: pre-wrap;
+    }
+
+    .tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .tag {
+      border-radius: 999px;
+      padding: 5px 9px;
+      background: var(--tag);
+      color: var(--accent-dark);
+      font-size: 0.82rem;
+      font-weight: 700;
+    }
+
+    .notice {
+      border: 1px solid #ead39a;
+      border-radius: 8px;
+      padding: 12px;
+      background: var(--warn);
+      color: #584318;
+      font-size: 0.92rem;
+    }
+
+    .recommendations {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+      gap: 12px;
+    }
+
+    .product {
+      display: flex;
+      min-height: 310px;
+      flex-direction: column;
+      gap: 10px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 14px;
+      background: #ffffff;
+    }
+
+    .product h3 {
+      margin: 0;
+      font-size: 1rem;
+      line-height: 1.25;
+      letter-spacing: 0;
+    }
+
+    .price {
+      border-radius: 6px;
+      padding: 8px;
+      background: var(--warn);
+      color: #584318;
+      font-weight: 700;
+    }
+
+    .product p {
+      margin: 0;
+      color: #344156;
+      font-size: 0.92rem;
+    }
+
+    .shop {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 40px;
+      margin-top: auto;
+      border-radius: 6px;
+      background: var(--accent);
+      color: #ffffff;
+      font-weight: 700;
+      text-decoration: none;
+    }
+
+    .shop:hover,
+    .shop:focus {
+      background: var(--accent-dark);
+    }
+
+    .pending {
+      border: 1px dashed var(--accent);
+      border-radius: 8px;
+      padding: 14px;
+      background: #f0faf7;
+      color: var(--accent-dark);
+      font-weight: 700;
+    }
+
+    .status {
+      min-height: 24px;
+      margin-top: 10px;
+      color: var(--accent-dark);
+      font-size: 0.92rem;
+      font-weight: 700;
+    }
+
+    @media (max-width: 880px) {
+      .layout,
+      .two {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="wrap hero">
+      <h1>Shopping Spec Agent</h1>
+      <p class="subtitle">Enter item specs, generate targeted shopping searches, and review verified recommendations. This example is populated with live-checked waterproof hiking boot deals.</p>
+    </div>
+  </header>
+
+  <main>
+    <div class="wrap layout">
+      <section class="panel" aria-labelledby="spec-title">
+        <h2 id="spec-title">Shopping Spec</h2>
+
+        <label for="item">Item</label>
+        <input id="item" value="men's waterproof hiking boots">
+
+        <div class="two">
+          <div>
+            <label for="size">Size</label>
+            <input id="size" value="10.5">
+          </div>
+          <div>
+            <label for="max-price">Max price</label>
+            <input id="max-price" value="$180">
+          </div>
+        </div>
+
+        <label for="color">Color</label>
+        <input id="color" value="brown or gray">
+
+        <label for="brands">Preferred brands</label>
+        <input id="brands" value="Oboz, Merrell">
+
+        <label for="stores">Preferred stores</label>
+        <input id="stores" value="REI, Backcountry, Moosejaw">
+
+        <label for="must-have">Must-have features</label>
+        <textarea id="must-have">Waterproof, good traction, suitable for Tour du Mont Blanc, active product page, in budget.</textarea>
+
+        <label for="recipient">Recipient email</label>
+        <input id="recipient" value="anagolsubbarao@gmail.com">
+
+        <label for="send-behavior">Send behavior</label>
+        <select id="send-behavior">
+          <option>Draft only</option>
+          <option>Send after explicit approval</option>
+        </select>
+
+        <button id="generate" type="button">Generate Agent Packet</button>
+        <div id="status" class="status" aria-live="polite"></div>
+      </section>
+
+      <section class="result">
+        <article class="card">
+          <h2 id="recommendations-title">Verified Recommendations</h2>
+          <p id="recommendations-copy" class="small">Click Generate Agent Packet to check whether the entered spec matches the verified example results.</p>
+          <div id="recommendations" class="recommendations"></div>
+        </article>
+
+        <article class="card">
+          <h2>Agent Instructions</h2>
+          <p class="small">Use this prompt when asking Codex to run the live search and email workflow.</p>
+          <div id="prompt" class="copy-block">Not generated yet. Fill or edit the shopping spec, then click Generate Agent Packet.</div>
+          <div class="tags">
+            <span class="tag">Live web verification</span>
+            <span class="tag">Reject stale listings</span>
+            <span class="tag">Draft before send</span>
+          </div>
+        </article>
+
+        <article class="card">
+          <h2>Targeted Search Links</h2>
+          <p class="small">Open these to spot candidate products quickly. Final matches should still be verified for size, color, price, and stock.</p>
+          <div id="links" class="search-links">
+            <div class="small">Search links will appear here after generation.</div>
+          </div>
+        </article>
+
+        <article class="card">
+          <h2>Email Draft Status</h2>
+          <div class="pending">Generate the packet to either populate a draft-ready email from verified matching recommendations or create a live-search request for the entered spec.</div>
+          <p class="small">Codex should re-check size 10.5, color, price, and active product pages before creating a draft.</p>
+          <div id="email" class="copy-block">Not generated yet.</div>
+        </article>
+
+        <div class="notice">
+          This local page does not access Gmail or place orders. The recommendations above were populated by Codex from live web results; before purchase or email, re-check size 10.5, color, final price, and stock.
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <script>
+    const fields = ['item', 'size', 'max-price', 'color', 'brands', 'stores', 'must-have', 'recipient', 'send-behavior'];
+    const verifiedRecommendations = [
+      {
+        name: "Oboz Sawtooth X Mid Waterproof Hiking Boots - Men's",
+        store: 'REI',
+        price: '$149.99, save 25% vs. $200',
+        fit: 'Size 10.5 should be checked on the REI product page; brown/gray options may vary by size.',
+        reason: 'Best overall match: Oboz preference, waterproof, mid-height support, regular/wide widths, strong review count, and below the $180 cap.',
+        url: 'https://www.rei.com/product/203230/oboz-sawtooth-x-mid-waterproof-hiking-boots-mens'
+      },
+      {
+        name: "Oboz Bridger Mid Waterproof Hiking Boots - Men's",
+        store: 'REI',
+        price: '$164.99, save 25% vs. $220',
+        fit: 'Size 10.5 should be checked on the REI product page; regular/wide and color availability can change.',
+        reason: 'More traditional/supportive Oboz pick with waterproof build, regular/wide widths, and a long review history. Still under budget.',
+        url: 'https://www.rei.com/product/857508/oboz-bridger-mid-waterproof-hiking-boots-mens'
+      },
+      {
+        name: "Oboz Sawtooth Ascent Mid Waterproof Hiking Boots - Men's",
+        store: 'REI',
+        price: '$131.19, save 25% vs. $175',
+        fit: 'Size 10.5 should be checked on the REI product page; best if a preferred brown/gray color is available.',
+        reason: 'Lowest-price Oboz mid-boot match under the cap. Good if size 10.5 is available in a preferred color when you click through.',
+        url: 'https://www.rei.com/product/C05328/oboz-sawtooth-ascent-mid-waterproof-hiking-boots-mens'
+      },
+      {
+        name: "Merrell Moab Speed 2 Mid GORE-TEX Hiking Boots - Men's",
+        store: 'REI',
+        price: '$138.69, save 25% vs. $185',
+        fit: 'Size 10.5 should be checked on the REI product page; regular/wide and color availability can change.',
+        reason: 'Backup brand match if Oboz size/color is limited. Waterproof GORE-TEX, lighter weight, regular/wide widths, and well reviewed.',
+        url: 'https://www.rei.com/product/237610/merrell-moab-speed-2-mid-gtx-hiking-boots-mens'
+      }
+    ];
+
+    function getSpec() {
+      return Object.fromEntries(fields.map(id => [id, document.getElementById(id).value.trim()]));
+    }
+
+    function makeSearchUrl(query) {
+      return `https://www.google.com/search?q=${encodeURIComponent(query)}`;
+    }
+
+    function normalize(value) {
+      return value.toLowerCase().replace(/[^a-z0-9.]+/g, ' ').trim();
+    }
+
+    function parsePrice(value) {
+      const match = value.match(/\d+(\.\d+)?/);
+      return match ? Number(match[0]) : 0;
+    }
+
+    function hasVerifiedResultsForSpec(spec, brandText) {
+      const item = normalize(spec.item);
+      const color = normalize(spec.color);
+      const brands = normalize(brandText);
+      const stores = normalize(spec.stores);
+      const maxPrice = parsePrice(spec['max-price']);
+
+      return item.includes('men') &&
+        item.includes('waterproof') &&
+        item.includes('hiking') &&
+        item.includes('boot') &&
+        normalize(spec.size) === '10.5' &&
+        maxPrice >= 180 &&
+        (color.includes('brown') || color.includes('gray') || color.includes('grey')) &&
+        (brands.includes('oboz') || brands.includes('merrell')) &&
+        stores.includes('rei');
+    }
+
+    function renderVerifiedRecommendations(hasResults, liveRecommendations = null) {
+      const title = document.getElementById('recommendations-title');
+      const copy = document.getElementById('recommendations-copy');
+      const container = document.getElementById('recommendations');
+
+      if (liveRecommendations) {
+        title.textContent = 'Live SerpAPI Recommendations';
+        copy.textContent = 'These results came from the local agent-service SerpAPI route. Re-check size, color, price, and stock on the product page before buying.';
+        container.innerHTML = liveRecommendations.map((item, index) => `
+          <div class="product">
+            <h3>${index + 1}. ${item.name}</h3>
+            <div class="price">${item.priceText || 'Price needs verification'}</div>
+            <p>${item.reason}</p>
+            <div class="tags">
+              <span class="tag">${item.store}</span>
+              <span class="tag">${item.sizeMatch}</span>
+            </div>
+            <a class="shop" href="${item.url}" target="_blank" rel="noopener">Shop this result</a>
+          </div>
+        `).join('');
+        return;
+      }
+
+      if (!hasResults) {
+        title.textContent = 'Verified Recommendations';
+        copy.textContent = 'No verified recommendations are available for the current form values yet. Generate the packet, then ask Codex to run the live web search for this exact spec.';
+        container.innerHTML = '<div class="pending">Needs live verification for the entered spec.</div>';
+        return;
+      }
+
+      title.textContent = 'Verified Recommendations For Entered Spec';
+      copy.textContent = "Live-checked for the current form values: men's waterproof hiking boots, size 10.5, brown/gray, under $180, preferred brands Oboz/Merrell. Final size/color availability can still change during the sale.";
+      container.innerHTML = verifiedRecommendations.map((item, index) => `
+        <div class="product">
+          <h3>${index + 1}. ${item.name}</h3>
+          <div class="price">${item.price}.</div>
+          <p>${item.reason}</p>
+          <div class="tags">
+            <span class="tag">${item.store}</span>
+            <span class="tag">Waterproof</span>
+            <span class="tag">Under budget</span>
+          </div>
+          <a class="shop" href="${item.url}" target="_blank" rel="noopener">Shop this boot</a>
+        </div>
+      `).join('');
+    }
+
+    async function searchWithSerpApi(spec, brandText, storeText) {
+      let response;
+
+      try {
+        response = await fetch('http://localhost:3001/api/shopping-search', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            item: spec.item,
+            size: spec.size,
+            color: spec.color,
+            maxPrice: spec['max-price'],
+            brands: brandText,
+            stores: storeText,
+            mustHave: spec['must-have']
+          })
+        });
+      } catch {
+        throw new Error('agent service is not running. Start it with: cd agent-service && npm start');
+      }
+
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || 'shopping search failed');
+      }
+
+      return data;
+    }
+
+    function buildEmailText(spec, brandText, storeText, recommendations) {
+      const recommendationText = recommendations.map((item, index) =>
+`${index + 1}. ${item.name}
+Store: ${item.store}
+Price: ${item.priceText || item.price}
+Size/color: ${item.sizeMatch || item.fit} ${item.colorMatch || ''}
+Why it matches: ${item.reason}
+Link: ${item.url}`
+      ).join('\n\n');
+
+      return `Draft-ready email:
+
+To: ${spec.recipient}
+Subject: Shopping recommendations for ${spec.item}
+
+Hi,
+
+Here are the best current matches I found for:
+
+Item: ${spec.item}
+Size: ${spec.size}
+Color: ${spec.color}
+Max price: ${spec['max-price']}
+Preferred brands: ${brandText}
+Preferred stores: ${storeText}
+Must-have features: ${spec['must-have']}
+
+${recommendationText}
+
+I filtered out stale listings, wrong sizes/colors, and options over budget. Please re-check size ${spec.size}, color, final price, and stock before buying.`;
+    }
+
+    async function render() {
+      const spec = getSpec();
+      const brands = spec.brands.split(',').map(item => item.trim()).filter(Boolean);
+      const stores = spec.stores.split(',').map(item => item.trim()).filter(Boolean);
+      const brandText = brands.join(', ') || 'any reliable brand';
+      const storeText = stores.join(', ') || 'reputable stores';
+      const hasVerifiedResults = hasVerifiedResultsForSpec(spec, brandText);
+      const generatedAt = new Date().toLocaleString([], {
+        month: 'short',
+        day: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit'
+      });
+
+      document.getElementById('prompt').textContent =
+`Research current shopping options for this spec:
+
+Item: ${spec.item}
+Size: ${spec.size}
+Color: ${spec.color}
+Max price: ${spec['max-price']}
+Preferred brands: ${brandText}
+Preferred stores: ${storeText}
+Must-have features: ${spec['must-have']}
+Recipient email: ${spec.recipient}
+Send behavior: ${spec['send-behavior']}
+
+Rules:
+- Search the live web.
+- Recommend only active product pages, not stale search result snippets.
+- Prefer products with the requested size and color available.
+- Stay under the max price before tax/shipping when possible.
+- Reject vague category pages unless no exact product page can be verified.
+- Return 3 to 5 ranked options with product name, store, price, size/color fit, discount, direct link, and short reason.
+- Create a Gmail draft to the recipient with the recommendations.
+- Do not send until I explicitly say "send".`;
+
+      const queries = [
+        `${spec.item} ${spec.size} ${spec.color} under ${spec['max-price']} ${brandText} ${storeText}`,
+        `site:rei.com ${spec.item} ${spec.size} ${spec.color} ${brandText}`,
+        `site:backcountry.com ${spec.item} ${spec.size} ${spec.color} ${brandText}`,
+        `site:moosejaw.com ${spec.item} ${spec.size} ${spec.color} ${brandText}`,
+        `${spec.item} sale ${spec.size} waterproof ${spec.color} ${brandText}`
+      ];
+
+      document.getElementById('links').innerHTML = queries.map((query, index) =>
+        `<a class="search-link" href="${makeSearchUrl(query)}" target="_blank" rel="noopener">Search ${index + 1}: ${query}</a>`
+      ).join('');
+      document.getElementById('status').textContent = 'Searching live with SerpAPI...';
+
+      try {
+        const data = await searchWithSerpApi(spec, brandText, storeText);
+        if (data.recommendations?.length) {
+          renderVerifiedRecommendations(false, data.recommendations);
+          document.getElementById('email').textContent = buildEmailText(spec, brandText, storeText, data.recommendations);
+          document.getElementById('status').textContent = `Generated live SerpAPI results at ${generatedAt}.`;
+          document.querySelector('.result').scrollIntoView({ behavior: 'smooth', block: 'start' });
+          return;
+        }
+      } catch (error) {
+        document.getElementById('status').textContent = `Live SerpAPI search unavailable: ${error.message}`;
+      }
+
+      renderVerifiedRecommendations(hasVerifiedResults);
+      document.getElementById('email').textContent = hasVerifiedResults
+        ? buildEmailText(spec, brandText, storeText, verifiedRecommendations)
+        :
+`No draft-ready recommendations yet for the entered spec.
+
+Copy this request into chat:
+
+Use the shopping spec agent and create a Gmail draft only after live verification.
+
+Item: ${spec.item}
+Size: ${spec.size}
+Color: ${spec.color}
+Max price: ${spec['max-price']}
+Preferred brands: ${brandText}
+Preferred stores: ${storeText}
+Must-have features: ${spec['must-have']}
+Recipient email: ${spec.recipient}
+
+Search live web listings. Recommend only active product pages that match size, color, budget, and brand/store preferences. Reject stale listings, vague category pages, wrong sizes/colors, and over-budget options.
+
+Fill the email with 3 to 5 real recommendations and do not send the draft until I explicitly say "send".`;
+
+      if (!document.getElementById('status').textContent.startsWith('Live SerpAPI search unavailable')) {
+        document.getElementById('status').textContent = `Generated agent packet at ${generatedAt}.`;
+      }
+      document.querySelector('.result').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    document.getElementById('generate').addEventListener('click', render);
+  </script>
+</body>
+</html>

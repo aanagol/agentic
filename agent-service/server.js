@@ -17,6 +17,7 @@ import chatRouter from './routes/chat.js';
 import checkoutRouter from './routes/checkout.js';
 import paymentRouter from './routes/payment.js';
 import profileRouter from './routes/profile.js';
+import shoppingSearchRouter from './routes/shopping-search.js';
 
 dotenv.config();
 
@@ -38,6 +39,7 @@ app.use('/api/chat', chatRouter);
 app.use('/api/checkout', checkoutRouter);
 app.use('/api/payment', paymentRouter);
 app.use('/api/profile', profileRouter);
+app.use('/api/shopping-search', shoppingSearchRouter);
 
 // Root endpoint
 app.get('/', (req, res) => {
@@ -63,6 +65,7 @@ app.get('/', (req, res) => {
         getMethods: 'GET /api/payment/methods - Get saved payment methods',
         createSPT: 'POST /api/payment/create-spt - Create Shared Payment Token',
       },
+      shoppingSearch: 'POST /api/shopping-search - Search shopping results with SerpAPI',
     },
   });
 });
@@ -74,6 +77,7 @@ app.get('/health', (req, res) => {
     lambdaEndpoint: process.env.LAMBDA_ENDPOINT || null,
     stripeProxyUrl: process.env.STRIPE_PROXY_URL || 'http://localhost:3002',
     merchantUrl: process.env.MERCHANT_API_URL || null,
+    serpApi: process.env.SERPAPI_API_KEY ? 'configured' : 'not_configured',
   });
 });
 
@@ -106,10 +110,10 @@ app.listen(PORT, () => {
   console.log(`   STRIPE_PROXY_URL: ${process.env.STRIPE_PROXY_URL || '❌ Not set (defaulting to http://localhost:3002)'}`);
   console.log(`   MERCHANT_API_URL: ${process.env.MERCHANT_API_URL || '❌ Not set (will use frontend config)'}`);
   console.log(`   WORKSHOP_SECRET: ${process.env.WORKSHOP_SECRET ? '✅ Set' : '❌ Not set'}`);
+  console.log(`   SERPAPI_API_KEY: ${process.env.SERPAPI_API_KEY ? '✅ Set' : '❌ Not set'}`);
   console.log(`   PORT: ${PORT}`);
   
   console.log(`\nPress Ctrl+C to stop\n`);
 });
 
 export default app;
-
