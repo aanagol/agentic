@@ -459,7 +459,7 @@
         stores.includes('rei');
     }
 
-    function renderVerifiedRecommendations(hasResults, liveRecommendations = null) {
+    function renderVerifiedRecommendations(hasResults, liveRecommendations = null, noResultsMessage = '') {
       const title = document.getElementById('recommendations-title');
       const copy = document.getElementById('recommendations-copy');
       const container = document.getElementById('recommendations');
@@ -484,8 +484,8 @@
 
       if (!hasResults) {
         title.textContent = 'Verified Recommendations';
-        copy.textContent = 'No verified recommendations are available for the current form values yet. Generate the packet, then ask Codex to run the live web search for this exact spec.';
-        container.innerHTML = '<div class="pending">Needs live verification for the entered spec.</div>';
+        copy.textContent = noResultsMessage || 'No verified recommendations are available for the current form values yet. Generate the packet, then ask Codex to run the live web search for this exact spec.';
+        container.innerHTML = '<div class="pending">No priced preferred-store matches found for the entered spec.</div>';
         return;
       }
 
@@ -510,7 +510,7 @@
       let response;
 
       try {
-        response = await fetch('http://localhost:3001/api/shopping-search', {
+        response = await fetch('https://agentic-kfq9.onrender.com/api/shopping-search', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -524,7 +524,7 @@
           })
         });
       } catch {
-        throw new Error('agent service is not running. Start it with: cd agent-service && npm start');
+        throw new Error('the public shopping search service could not be reached. Please try again shortly.');
       }
 
       const data = await response.json();
@@ -574,6 +574,7 @@ I filtered out stale listings, wrong sizes/colors, and options over budget. Plea
       const brandText = brands.join(', ') || 'any reliable brand';
       const storeText = stores.join(', ') || 'reputable stores';
       const hasVerifiedResults = hasVerifiedResultsForSpec(spec, brandText);
+      let noLiveMatches = false;
       const generatedAt = new Date().toLocaleString([], {
         month: 'short',
         day: 'numeric',
@@ -597,6 +598,7 @@ Send behavior: ${spec['send-behavior']}
 Rules:
 - Search the live web.
 - Recommend only active product pages, not stale search result snippets.
+- Return results only from the preferred stores when stores are entered.
 - Prefer products with the requested size and color available.
 - Stay under the max price before tax/shipping when possible.
 - Reject vague category pages unless no exact product page can be verified.
@@ -605,11 +607,11 @@ Rules:
 - Do not send until I explicitly say "send".`;
 
       const queries = [
-        `${spec.item} ${spec.size} ${spec.color} under ${spec['max-price']} ${brandText} ${storeText}`,
-        `site:rei.com ${spec.item} ${spec.size} ${spec.color} ${brandText}`,
-        `site:backcountry.com ${spec.item} ${spec.size} ${spec.color} ${brandText}`,
-        `site:moosejaw.com ${spec.item} ${spec.size} ${spec.color} ${brandText}`,
-        `${spec.item} sale ${spec.size} waterproof ${spec.color} ${brandText}`
+        `${spec.item} ${spec.size} ${spec.color} under ${spec['max-price']} ${brandText} ${storeText} -site:facebook.com -site:youtube.com`,
+        `site:rei.com ${spec.item} ${spec.size} ${spec.color} ${brandText} -site:facebook.com -site:youtube.com`,
+        `site:backcountry.com ${spec.item} ${spec.size} ${spec.color} ${brandText} -site:facebook.com -site:youtube.com`,
+        `site:moosejaw.com ${spec.item} ${spec.size} ${spec.color} ${brandText} -site:facebook.com -site:youtube.com`,
+        `${spec.item} sale ${spec.size} waterproof ${spec.color} ${brandText} ${storeText} -site:facebook.com -site:youtube.com`
       ];
 
       document.getElementById('links').innerHTML = queries.map((query, index) =>
@@ -626,12 +628,17 @@ Rules:
           document.querySelector('.result').scrollIntoView({ behavior: 'smooth', block: 'start' });
           return;
         }
+        noLiveMatches = true;
+        renderVerifiedRecommendations(false, null, data.message);
+        document.getElementById('status').textContent = 'Live search completed, but no priced results matched the entered stores and budget.';
       } catch (error) {
         document.getElementById('status').textContent = `Live SerpAPI search unavailable: ${error.message}`;
       }
 
-      renderVerifiedRecommendations(hasVerifiedResults);
-      document.getElementById('email').textContent = hasVerifiedResults
+      if (!document.getElementById('status').textContent.startsWith('Live search completed')) {
+        renderVerifiedRecommendations(hasVerifiedResults);
+      }
+      document.getElementById('email').textContent = hasVerifiedResults && !noLiveMatches
         ? buildEmailText(spec, brandText, storeText, verifiedRecommendations)
         :
 `No draft-ready recommendations yet for the entered spec.

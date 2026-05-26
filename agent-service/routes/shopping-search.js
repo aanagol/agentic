@@ -3,6 +3,14 @@ import express from 'express';
 const router = express.Router();
 
 const SERPAPI_ENDPOINT = 'https://serpapi.com/search.json';
+const EXCLUDED_DOMAINS = ['facebook.com', 'youtube.com'];
+const STORE_DOMAINS = {
+  rei: ['rei.com'],
+  backcountry: ['backcountry.com'],
+  moosejaw: ['moosejaw.com'],
+  amazon: ['amazon.com'],
+  zappos: ['zappos.com']
+};
 
 function toArray(value) {
   if (Array.isArray(value)) {
@@ -25,20 +33,54 @@ function normalizePrice(value) {
   return match ? Number(match[0]) : null;
 }
 
-function buildQuery(spec) {
-  const brands = toArray(spec.brands);
-  const stores = toArray(spec.stores);
+function getPreferredDomains(stores) {
+  return toArray(stores)
+    .flatMap(store => STORE_DOMAINS[store.toLowerCase()] || [])
+    .filter(Boolean);
+}
+
+function buildQuery(spec, storeDomain = '', brand = '') {
+  const storeRestriction = storeDomain ? `site:${storeDomain}` : '';
   const parts = [
     spec.item,
-    spec.size ? `size ${spec.size}` : '',
-    spec.color,
-    spec.maxPrice ? `under $${normalizePrice(spec.maxPrice)}` : '',
-    brands.length ? `(${brands.join(' OR ')})` : '',
-    stores.length ? `(${stores.join(' OR ')})` : '',
-    toArray(spec.mustHave).join(' ')
+    brand,
+    storeRestriction,
+    'sale'
   ];
 
-  return parts.filter(Boolean).join(' ');
+  return [...parts.filter(Boolean), '-site:facebook.com', '-site:youtube.com'].join(' ');
+}
+
+function buildQueries(spec) {
+  const preferredDomains = getPreferredDomains(spec.stores);
+  const brands = toArray(spec.brands);
+  const domains = preferredDomains.length ? preferredDomains : [''];
+  const brandTerms = brands.length ? brands : [''];
+
+  return domains.flatMap(domain => brandTerms.map(brand => buildQuery(spec, domain, brand)));
+}
+
+function isExcludedResult(result) {
+  try {
+    const hostname = new URL(result.link).hostname.toLowerCase();
+    return EXCLUDED_DOMAINS.some(domain => hostname === domain || hostname.endsWith(`.${domain}`));
+  } catch {
+    return false;
+  }
+}
+
+function isFromPreferredStore(result, stores) {
+  const preferredDomains = getPreferredDomains(stores);
+  if (!preferredDomains.length) {
+    return true;
+  }
+
+  try {
+    const hostname = new URL(result.link).hostname.toLowerCase();
+    return preferredDomains.some(domain => hostname === domain || hostname.endsWith(`.${domain}`));
+  } catch {
+    return false;
+  }
 }
 
 function detectStore(url = '', title = '') {
@@ -92,6 +134,37 @@ function scoreResult(result, spec) {
   return score;
 }
 
+function detectPreferredBrand(result, spec) {
+  const text = `${result.title || ''} ${result.snippet || ''} ${result.link || ''}`.toLowerCase();
+  return toArray(spec.brands).find(brand => text.includes(brand.toLowerCase())) || null;
+}
+
+function selectDiverseResults(results, spec, maxResults = 5) {
+  const selected = [];
+  const selectedLinks = new Set();
+
+  toArray(spec.brands).forEach(brand => {
+    const match = results.find(result =>
+      !selectedLinks.has(result.link) &&
+      detectPreferredBrand(result, spec)?.toLowerCase() === brand.toLowerCase()
+    );
+
+    if (match) {
+      selected.push(match);
+      selectedLinks.add(match.link);
+    }
+  });
+
+  results.forEach(result => {
+    if (selected.length < maxResults && !selectedLinks.has(result.link)) {
+      selected.push(result);
+      selectedLinks.add(result.link);
+    }
+  });
+
+  return selected.slice(0, maxResults);
+}
+
 function resultToRecommendation(result, spec) {
   const price = extractPrice(result);
   const store = detectStore(result.link, result.title);
@@ -143,24 +216,39 @@ router.post('/', async (req, res, next) => {
 
   try {
     const spec = req.body || {};
-    const query = buildQuery(spec);
-    const data = await searchSerpApi(query, apiKey);
-    const organic = data.organic_results || [];
-    const shopping = data.shopping_results || [];
-    const allResults = [...shopping, ...organic]
+    const queries = buildQueries(spec);
+    const resultSets = await Promise.all(queries.map(query => searchSerpApi(query, apiKey)));
+    const rawResults = resultSets.flatMap(data => [
+      ...(data.shopping_results || []),
+      ...(data.organic_results || [])
+    ]);
+    const maxPrice = normalizePrice(spec.maxPrice);
+    const seenLinks = new Set();
+    const allResults = rawResults
       .filter(result => result.link)
+      .filter(result => !isExcludedResult(result))
+      .filter(result => isFromPreferredStore(result, spec.stores))
+      .filter(result => extractPrice(result) !== null)
+      .filter(result => !maxPrice || extractPrice(result) <= maxPrice)
+      .filter(result => {
+        if (seenLinks.has(result.link)) return false;
+        seenLinks.add(result.link);
+        return true;
+      })
       .map(result => ({ ...result, score: scoreResult(result, spec) }))
       .sort((a, b) => b.score - a.score);
 
-    const recommendations = allResults
-      .slice(0, 5)
+    const recommendations = selectDiverseResults(allResults, spec)
       .map(result => resultToRecommendation(result, spec));
 
     res.json({
       status: recommendations.length ? 'verified' : 'no_results',
-      query,
+      queries,
       recommendations,
-      source: 'SerpAPI'
+      source: 'SerpAPI',
+      message: recommendations.length
+        ? null
+        : 'No direct preferred-store products with visible prices within the entered budget were found.'
     });
   } catch (error) {
     next(error);
